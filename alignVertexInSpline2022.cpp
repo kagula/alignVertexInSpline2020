@@ -6,8 +6,8 @@
 // agreement provided at the time of installation or download, or which 
 // otherwise accompanies this software in either electronic or hard copy form.
 //**************************************************************************/
-// DESCRIPTION: Plugin Wizard generated plugin
-// AUTHOR: 
+// DESCRIPTION: Align vertex in spline for 3ds max 2022
+// AUTHOR: Kagula
 //***************************************************************************/
 
 #include "alignVertexInSpline2022.h"
