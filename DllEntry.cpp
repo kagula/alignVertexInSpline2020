@@ -10,7 +10,7 @@
 // AUTHOR: 
 //***************************************************************************/
 
-#include "alignVertexInSpline2020.h"
+#include "alignVertexInSpline2022.h"
 
 extern ClassDesc2* GetalignVertexInSpline2020Desc();
 
