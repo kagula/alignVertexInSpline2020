@@ -8,6 +8,7 @@
 #include "spline3d.h"
 #include "splshape.h"
 
+#include <list>
 #include <set>
 #include <assert.h>
 
@@ -21,6 +22,51 @@ QtPluginRollup::QtPluginRollup(QWidget* /*parent*/)
 	ui->label->setMaximumHeight(32);
 	ui->leInput->setText("0");
 }
+
+
+// This is the restore object that contains the information allowing us
+// to Undo or Redo the operation of setting the node TM.
+class Spline3dRestore : public RestoreObj {
+public:
+	INode *_pNode;
+
+	std::vector<Point3> vecP3;
+	// Constructor
+	Spline3dRestore(INode *n, SplineShape *pSS, Spline3D *pS) {
+		_pNode = n;
+		vecP3.resize(pS->KnotCount());
+		for (size_t i = 0; i < pS->KnotCount(); i++)
+		{
+			vecP3[i] = pS->GetKnotPoint(i);
+		}
+	}
+
+	// Called when Undo is selected
+	void Restore(int isUndo) {
+		Object *pObj = _pNode->GetObjectRef();
+		assert(pObj != nullptr);
+		
+		SplineShape *pSS = (SplineShape *)(pObj);	
+		Spline3D *pS = pSS->shape.splines[0];
+		assert(pS != nullptr);
+
+		for (size_t i = 0; i < vecP3.size(); i++)
+		{
+			pS->SetKnotPoint(i, vecP3[i]);
+		}
+
+		pSS->GetShape().InvalidateGeomCache();
+		_pNode->NotifyDependents(FOREVER, TOPO_CHANNEL, REFMSG_CHANGE);
+		Interface* ip = GetCOREInterface();
+		ip->RedrawViews(ip->GetTime());
+	}
+
+	// Called when Redo is selected
+	void Redo() {}// We need not response redo event.
+
+	// Called to return the size in bytes of this RestoreObj
+	int Size() { return sizeof(Spline3dRestore); }
+};
 
 void QtPluginRollup::alignVertexInSpline(OPTYPE optype)
 {
@@ -174,6 +220,11 @@ void QtPluginRollup::alignVertexInSpline(OPTYPE optype)
 		return newValue;
 	}(qsValue.toFloat());
 
+	theHold.Begin();
+	theHold.Put(new Spline3dRestore(pNode, pSS, pS));
+	theHold.Accept(TSTR(_T("Modify Node Pos")));
+
+	pNode->NotifyDependents(FOREVER, 0, REFMSG_SHAPE_START_CHANGE);
 	for (size_t i = 0, index = 0; i < nKC; i++)
 	{
 		if (setSelectedVertexIndex.find(i) != setSelectedVertexIndex.end())
@@ -203,6 +254,7 @@ void QtPluginRollup::alignVertexInSpline(OPTYPE optype)
 			}
 		}
 	}
+	pNode->NotifyDependents(FOREVER, 0, REFMSG_SHAPE_END_CHANGE);
 
 	//update display
 	static wchar_t bufDisplay[128] = { 0 };

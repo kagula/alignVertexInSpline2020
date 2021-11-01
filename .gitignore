@@ -1,3 +1,7 @@
+.vs
+GeneratedFiles
+obj
+
 # Prerequisites
 *.d
 
